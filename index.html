@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HUBs Dashboard — Jan–Mai 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root{color-scheme:light;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh;}
+
+/* ── HEADER ── */
+.app-header{background:#fff;border-bottom:1px solid #e5e7eb;padding:14px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.app-header h1{font-size:1.15rem;font-weight:700;}
+.app-header p{font-size:.78rem;color:#888;}
+.badge{background:#e8f4fd;color:#2563eb;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #bfdbfe;margin-left:auto;}
+
+/* ── TABS ── */
+.tab-bar{background:#fff;border-bottom:2px solid #e5e7eb;display:flex;gap:2px;padding:0 24px;overflow-x:auto;}
+.tab-btn{padding:12px 18px;font-size:.82rem;font-weight:600;color:#6b7280;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .2s;}
+.tab-btn:hover{color:#2563eb;}
+.tab-btn.active{color:#2563eb;border-bottom-color:#2563eb;}
+.tab-content{display:none;padding:24px;}
+.tab-content.active{display:block;}
+
+/* ── KPI CARDS ── */
+.kpi-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
+.kpi{background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #2563eb;min-width:140px;flex:1;}
+.kpi.g{border-left-color:#16a34a;} .kpi.r{border-left-color:#ea580c;} .kpi.p{border-left-color:#7c3aed;} .kpi.t{border-left-color:#0891b2;}
+.kpi-lbl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#999;margin-bottom:4px;}
+.kpi-val{font-size:1.6rem;font-weight:800;line-height:1;}
+.kpi-sub{font-size:.7rem;color:#bbb;margin-top:3px;}
+
+/* ── CARDS ── */
+.grid{display:grid;gap:16px;margin-bottom:16px;}
+.grid-2{grid-template-columns:1fr 1fr;}
+.grid-3{grid-template-columns:1fr 1fr 1fr;}
+.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.card-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#374151;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.cw{position:relative;} .cw-240{height:240px;} .cw-280{height:280px;} .cw-320{height:320px;} .cw-360{height:360px;}
+
+/* ── TABLES ── */
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.tbl th{background:#f8fafc;padding:8px 12px;text-align:left;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:2px solid #e5e7eb;}
+.tbl td{padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#374151;}
+.tbl tr:hover td{background:#f8fafc;}
+.tbl tr:last-child td{border-bottom:none;}
+.rank{color:#aaa;font-weight:700;font-size:.7rem;}
+.bar-track{background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden;min-width:80px;}
+.bar-fill{height:8px;border-radius:4px;}
+.tag{display:inline-block;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;}
+.tag-bug{background:#fee2e2;color:#dc2626;} .tag-work{background:#dcfce7;color:#16a34a;}
+
+/* ── TEAM SELECTOR ── */
+.team-selector{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+.team-btn{padding:6px 14px;border-radius:20px;border:2px solid #e5e7eb;background:#fff;font-size:.78rem;font-weight:600;cursor:pointer;color:#6b7280;transition:all .15s;}
+.team-btn.active{border-color:var(--c);background:var(--c);color:#fff;}
+
+/* ── HORIZ BARS (HTML) ── */
+.hbar-list{display:flex;flex-direction:column;gap:10px;}
+.hbar-row{display:flex;align-items:center;gap:10px;}
+.hbar-name{width:160px;font-size:.75rem;font-weight:600;color:#374151;flex-shrink:0;text-align:right;}
+.hbar-track{flex:1;background:#e5e7eb;border-radius:6px;height:26px;overflow:hidden;}
+.hbar-fill{height:26px;border-radius:6px;display:flex;align-items:center;padding:0 8px;min-width:4px;}
+.hbar-label{font-size:.75rem;font-weight:700;color:#fff;white-space:nowrap;}
+.hbar-ext{font-size:.72rem;color:#555;margin-left:6px;white-space:nowrap;}
+
+/* ── PIE LEGEND ── */
+.pie-legend{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.pie-leg-row{display:flex;align-items:center;gap:8px;font-size:.75rem;}
+.pie-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.pie-leg-name{flex:1;color:#374151;}
+.pie-leg-val{font-weight:700;color:#1a1a2e;}
+.pie-leg-pct{color:#888;font-size:.7rem;}
+
+/* ── CHIPS ── */
+.chip-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+.chip{background:#f1f5f9;color:#475569;font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:8px;}
+
+@media(max-width:700px){.grid-2,.grid-3{grid-template-columns:1fr;}.hbar-name{width:100px;}.kpi-val{font-size:1.3rem;}}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <h1>📊 HUBs — Painel de Horas</h1>
+    <p>Janeiro a Maio de 2026 · Projeto Normalizado + Work Item Type Category</p>
+  </div>
+  <span class="badge">Jan–Mai 2026</span>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('equipa')">👥 Por Equipa</button>
+  <button class="tab-btn" onclick="switchTab('adm')">🏢 Administrativo</button>
+  <button class="tab-btn" onclick="switchTab('pmo')">📋 PMO</button>
+  <button class="tab-btn" onclick="switchTab('suporte')">🛠 Suporte</button>
+  <button class="tab-btn" onclick="switchTab('demanda')">📌 Demanda</button>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- ABA: POR EQUIPA                                                  -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="tab-equipa" class="tab-content active">
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Total Geral</div><div class="kpi-val">33.819h</div><div class="kpi-sub">Jan–Mai/26</div></div>
+    <div class="kpi g"><div class="kpi-lbl">Horas Trabalho</div><div class="kpi-val" id="kpi-work">—</div><div class="kpi-sub" id="kpi-work-pct">—</div></div>
+    <div class="kpi r"><div class="kpi-lbl">Horas Bugs</div><div class="kpi-val" id="kpi-bugs">—</div><div class="kpi-sub" id="kpi-bugs-pct">—</div></div>
+    <div class="kpi p"><div class="kpi-lbl">Membros</div><div class="kpi-val" id="kpi-membros">—</div><div class="kpi-sub">na equipa</div></div>
+  </div>
+
+  <div class="team-selector" id="teamSelector"></div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#2563eb"></span>Trabalho vs Bugs por Mês</div>
+      <div class="cw cw-280"><canvas id="teamMonthChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#7c3aed"></span>% Bugs por Mês</div>
+      <div class="cw cw-280"><canvas id="teamBugPctChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#1a1a2e"></span>Resumo de Todas as Equipes</div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Equipa</th><th>Membros</th><th>Total</th><th>Trabalho</th><th>% Work</th><th>Bugs</th><th>% Bugs</th><th>Distribuição</th></tr></thead>
+      <tbody id="equipaTableBody"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- ABA: ADMINISTRATIVO                                              -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="tab-adm" class="tab-content">
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Total ADM</div><div class="kpi-val">5.835h</div><div class="kpi-sub">Jan–Mai/26</div></div>
+    <div class="kpi r"><div class="kpi-lbl">% do Total Geral</div><div class="kpi-val">17,2%</div><div class="kpi-sub">de 33.819h</div></div>
+    <div class="kpi p"><div class="kpi-lbl">Tipos de Atividade</div><div class="kpi-val">18</div><div class="kpi-sub">categorias</div></div>
+    <div class="kpi g"><div class="kpi-lbl">Média Mensal</div><div class="kpi-val">1.167h</div><div class="kpi-sub">horas / mês</div></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#7c3aed"></span>Distribuição por Tipo de Atividade</div>
+      <div class="cw cw-320"><canvas id="admPieChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#2563eb"></span>Evolução Mensal — ADM</div>
+      <div class="cw cw-280"><canvas id="admMonthChart"></canvas></div>
+      <table class="tbl" style="margin-top:14px">
+        <thead><tr><th>Mês</th><th>Horas ADM</th><th>% Total ADM</th></tr></thead>
+        <tbody id="admMonthTbl"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#ea580c"></span>Ranking de Atividades Administrativas</div>
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Tipo de Atividade</th><th>Horas</th><th>% do ADM</th><th>Distribuição</th></tr></thead>
+      <tbody id="admTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- ABA: PMO                                                         -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="tab-pmo" class="tab-content">
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Total PMO</div><div class="kpi-val">4.298h</div><div class="kpi-sub">Jan–Mai/26</div></div>
+    <div class="kpi g"><div class="kpi-lbl">Clientes Atendidos</div><div class="kpi-val">25</div><div class="kpi-sub">clientes</div></div>
+    <div class="kpi p"><div class="kpi-lbl">Projetos Fechados</div><div class="kpi-val">56</div><div class="kpi-sub">chaves PMO</div></div>
+    <div class="kpi r"><div class="kpi-lbl">% do Total Geral</div><div class="kpi-val">12,7%</div><div class="kpi-sub">de 33.819h</div></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#2563eb"></span>Horas PMO por Cliente</div>
+      <div class="cw cw-360"><canvas id="pmoBarChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#7c3aed"></span>Projetos Fechados por Cliente</div>
+      <div class="cw cw-360"><canvas id="pmoProjChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#0891b2"></span>Detalhe PMO por Cliente</div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Cliente</th><th>Horas</th><th>% PMO</th><th>Projetos</th><th>Chaves PMO</th><th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai*</th></tr></thead>
+      <tbody id="pmoTableBody"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- ABA: SUPORTE                                                     -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="tab-suporte" class="tab-content">
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Total Suporte</div><div class="kpi-val">1.904h</div><div class="kpi-sub">Jan–Mai/26</div></div>
+    <div class="kpi g"><div class="kpi-lbl">Clientes com Suporte</div><div class="kpi-val">24</div><div class="kpi-sub">clientes</div></div>
+    <div class="kpi p"><div class="kpi-lbl">Chamados (chaves SUP)</div><div class="kpi-val">156</div><div class="kpi-sub">chaves únicas</div></div>
+    <div class="kpi r"><div class="kpi-lbl">% do Total Geral</div><div class="kpi-val">5,6%</div><div class="kpi-sub">de 33.819h</div></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#0891b2"></span>Distribuição de Suporte por Cliente</div>
+      <div class="cw cw-320"><canvas id="supPieChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#16a34a"></span>Evolução Mensal — Suporte</div>
+      <div class="cw cw-280"><canvas id="supMonthChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#ea580c"></span>Ranking de Clientes por Horas de Suporte</div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Cliente</th><th>Horas</th><th>% Suporte</th><th>Chamados</th><th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai*</th><th>Distribuição</th></tr></thead>
+      <tbody id="supTableBody"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- ABA: DEMANDA                                                     -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="tab-demanda" class="tab-content">
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Total Demanda</div><div class="kpi-val">3.337h</div><div class="kpi-sub">Jan–Mai/26</div></div>
+    <div class="kpi g"><div class="kpi-lbl">Clientes</div><div class="kpi-val">12</div><div class="kpi-sub">com demandas</div></div>
+    <div class="kpi p"><div class="kpi-lbl">Maior Cliente</div><div class="kpi-val">Michelin</div><div class="kpi-sub">2.119h · 63,5%</div></div>
+    <div class="kpi r"><div class="kpi-lbl">% do Total Geral</div><div class="kpi-val">9,9%</div><div class="kpi-sub">de 33.819h</div></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#d97706"></span>Distribuição de Demandas por Cliente</div>
+      <div class="cw cw-320"><canvas id="demPieChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#16a34a"></span>Evolução Mensal — Demandas</div>
+      <div class="cw cw-280"><canvas id="demMonthChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#2563eb"></span>Ranking de Clientes por Demandas</div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Cliente</th><th>Horas</th><th>% Demanda</th><th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai*</th><th>Distribuição</th></tr></thead>
+      <tbody id="demTableBody"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;font-size:.7rem;color:#bbb;padding:16px 0">* Mai/26 parcial até 21/05 · Bugs = Problema, Bug, Incidente, Mudança, Retrabalho, Change · PMO/SUP/DEM = prefixo da chave Jira</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+// ── DATA ─────────────────────────────────────────────────────────
+const TOTAL = 33819.4;
+const MESES = ['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26'];
+const MK    = ['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26'];
+
+const EQUIPA = [
+  {name:'Team Don',      total:8694.6,work:7332.2,bugs:1362.4,membros:14,color:'#2563eb',
+   work_m:{Jan:1555.7,Fev:1579.0,Mar:2031.6,Abr:1426.7,Mai:739.2},
+   bugs_m:{Jan:371.5,Fev:279.1,Mar:243.7,Abr:342.3,Mai:125.8}},
+  {name:'Team Venâncio', total:6910.8,work:6681.2,bugs:229.6, membros:10,color:'#7c3aed',
+   work_m:{Jan:1433.9,Fev:1314.2,Mar:1562.3,Abr:1522.8,Mai:848.0},
+   bugs_m:{Jan:15.0,Fev:51.2,Mar:83.2,Abr:80.2,Mai:0}},
+  {name:'Team Renato',   total:5516.0,work:4597.9,bugs:918.1, membros:9, color:'#16a34a',
+   work_m:{Jan:1093.0,Fev:840.1,Mar:1090.2,Abr:928.7,Mai:645.9},
+   bugs_m:{Jan:96.9,Fev:270.0,Mar:304.0,Abr:176.2,Mai:71.0}},
+  {name:'Team Abdias',   total:4413.1,work:3944.0,bugs:469.1, membros:7, color:'#ea580c',
+   work_m:{Jan:802.7,Fev:850.6,Mar:957.0,Abr:909.2,Mai:424.5},
+   bugs_m:{Jan:136.6,Fev:89.9,Mar:77.8,Abr:50.8,Mai:114.0}},
+  {name:'Team Ceci',     total:4001.2,work:3743.2,bugs:258.0, membros:6, color:'#0891b2',
+   work_m:{Jan:812.9,Fev:769.3,Mar:823.5,Abr:797.1,Mai:540.4},
+   bugs_m:{Jan:61.8,Fev:99.9,Mar:35.3,Abr:42.2,Mai:18.8}},
+  {name:'Team Calega',   total:2792.5,work:2691.8,bugs:100.7, membros:4, color:'#d97706',
+   work_m:{Jan:681.3,Fev:600.1,Mar:548.1,Abr:526.6,Mai:335.7},
+   bugs_m:{Jan:4.2,Fev:18.8,Mar:45.7,Abr:28.0,Mai:4.0}},
+  {name:'Team Carlos',   total:1491.3,work:1481.3,bugs:10.0,  membros:3, color:'#db2777',
+   work_m:{Jan:327.3,Fev:346.2,Mar:361.8,Abr:301.8,Mai:144.2},
+   bugs_m:{Jan:8.0,Fev:2.0,Mar:0,Abr:0,Mai:0}},
+];
+
+const ADM = {
+  total: 5834.7,
+  by_mes: {Jan:1295.5,Fev:1283.1,Mar:1068.7,Abr:1481.6,Mai:705.9},
+  by_tarefa: [
+    ['Reunião de Equipe',1619.0],['Feriado/Férias',875.0],['Estudo Complementar',784.3],
+    ['Treinamentos/Capacitação',652.5],['Gestão de Equipes',589.8],['Reunião',380.8],
+    ['Estudo de Melhorias',372.3],['Ausência/Atestado',206.9],['Melhorias Docs/Processos',111.5],
+    ['Suporte/Chamados Internos',104.0],['Controle JIRA',76.6],['Projeção e Faturamento',26.8],
+    ['Relatórios',12.8],['Estimativa de Demandas',8.5],['Assessment/Consultoria',5.8],
+    ['Gestão do Conhecimento',5.5],['Estimativa Demandas/Pré-Vendas',1.5],['Treinamentos Int/Ext',1.2],
+  ]
+};
+
+const PMO = [
+  {c:'ALGAR',       h:596.8,p:7,  m:{Jan:57.6, Fev:149.5,Mar:256.7,Abr:102.3,Mai:30.6}, chaves:['PMO-642','PMO-675','PMO-756','PMO-757','PMO-760','PMO-776','PMO-805']},
+  {c:'RENNER',      h:568.2,p:7,  m:{Jan:59.0, Fev:36.0, Mar:144.2,Abr:194.0,Mai:135.0},chaves:['PMO-630','PMO-638','PMO-679','PMO-688','PMO-733','PMO-790','PMO-802']},
+  {c:'EMBRACON',    h:567.9,p:1,  m:{Jan:2.0,  Fev:209.6,Mar:325.8,Abr:30.5, Mai:0},    chaves:['PMO-754']},
+  {c:'SWIFT',       h:546.3,p:2,  m:{Jan:51.0, Fev:107.5,Mar:268.8,Abr:99.5, Mai:19.5}, chaves:['PMO-734','PMO-769']},
+  {c:'MAG SEGUROS', h:348.7,p:4,  m:{Jan:40.3, Fev:110.5,Mar:171.9,Abr:15.5, Mai:10.5}, chaves:['PMO-444','PMO-620','PMO-698','PMO-785']},
+  {c:'COPEL',       h:303.2,p:2,  m:{Jan:90.0, Fev:51.2, Mar:100.0,Abr:53.0, Mai:9.0},  chaves:['PMO-704','PMO-787']},
+  {c:'SERASA',      h:251.8,p:2,  m:{Jan:3.5,  Fev:148.1,Mar:100.2,Abr:0,    Mai:0},    chaves:['PMO-684','PMO-773']},
+  {c:'AEC',         h:175.0,p:1,  m:{Jan:15.0, Fev:40.0, Mar:26.5, Abr:61.2, Mai:32.2}, chaves:['PMO-772']},
+  {c:'BTG PACTUAL', h:151.7,p:1,  m:{Jan:0,    Fev:0,    Mar:7.5,  Abr:69.0, Mai:75.2}, chaves:['PMO-687']},
+  {c:'ATENTO',      h:133.0,p:1,  m:{Jan:122.0,Fev:0,    Mar:11.0, Abr:0,    Mai:0},    chaves:['PMO-743']},
+  {c:'CAREPLUS',    h:132.8,p:3,  m:{Jan:21.2, Fev:24.9, Mar:16.6, Abr:70.1, Mai:0},    chaves:['PMO-721','PMO-740','PMO-771']},
+  {c:'SASCAR',      h:89.1, p:3,  m:{Jan:13.5, Fev:0,    Mar:75.6, Abr:0,    Mai:0},    chaves:['PMO-746','PMO-774','PMO-786']},
+  {c:'SAFRA',       h:62.2, p:1,  m:{Jan:0,    Fev:0,    Mar:35.0, Abr:27.2, Mai:0},    chaves:['PMO-635']},
+  {c:'ALBERT EINSTEIN',h:62.0,p:2,m:{Jan:45.0, Fev:6.0,  Mar:7.0,  Abr:0,    Mai:4.0},  chaves:['PMO-720','PMO-731']},
+  {c:'BRB SEGUROS', h:57.5, p:3,  m:{Jan:0,    Fev:0,    Mar:57.5, Abr:0,    Mai:0},    chaves:['PMO-678','PMO-781','PMO-792']},
+  {c:'CEG-GAS NAT.',h:43.2, p:1,  m:{Jan:41.2, Fev:2.0,  Mar:0,    Abr:0,    Mai:0},    chaves:['PMO-747']},
+  {c:'ASISTO',      h:37.5, p:1,  m:{Jan:0,    Fev:0,    Mar:0,    Abr:0,    Mai:37.5}, chaves:['PMO-794']},
+  {c:'GHC',         h:30.0, p:1,  m:{Jan:0,    Fev:7.0,  Mar:20.5, Abr:0.5,  Mai:2.0},  chaves:['PMO-775']},
+  {c:'TIM',         h:26.0, p:1,  m:{Jan:0,    Fev:0,    Mar:0,    Abr:20.0, Mai:6.0},  chaves:['PMO-651']},
+  {c:'NIO',         h:19.2, p:1,  m:{Jan:0,    Fev:10.0, Mar:9.2,  Abr:0,    Mai:0},    chaves:['PMO-719']},
+  {c:'LEVE SAUDE',  h:17.1, p:1,  m:{Jan:11.8, Fev:1.5,  Mar:1.8,  Abr:2.0,  Mai:0},   chaves:['PMO-673']},
+  {c:'COAMO',       h:13.5, p:1,  m:{Jan:0,    Fev:0.5,  Mar:12.0, Abr:1.0,  Mai:0},    chaves:['PMO-654']},
+  {c:'OI',          h:10.0, p:1,  m:{Jan:0,    Fev:0,    Mar:0,    Abr:10.0, Mai:0},    chaves:['PMO-565']},
+  {c:'GRUPO JCA',   h:5.0,  p:1,  m:{Jan:0,    Fev:0,    Mar:0,    Abr:5.0,  Mai:0},    chaves:['PMO-641']},
+  {c:'180 SEGUROS', h:4.0,  p:2,  m:{Jan:0.5,  Fev:0,    Mar:3.5,  Abr:0,    Mai:0},    chaves:['PMO-656','PMO-752']},
+];
+
+const SUP = [
+  {c:'RENNER',           h:888.0,ch:66,m:{Jan:206.8,Fev:186.3,Mar:223.0,Abr:181.7,Mai:90.2}},
+  {c:'MICHELIN C.FLEET', h:201.2,ch:14,m:{Jan:58.2, Fev:28.5, Mar:87.4, Abr:23.0, Mai:4.0}},
+  {c:'Suporte (interno)',h:140.8,ch:14,m:{Jan:14.5, Fev:9.0,  Mar:0,    Abr:39.8, Mai:77.5}},
+  {c:'NIO',              h:136.8,ch:9, m:{Jan:0,    Fev:0,    Mar:12.5, Abr:74.2, Mai:50.0}},
+  {c:'BANCO DO BRASIL',  h:115.5,ch:12,m:{Jan:45.2, Fev:54.2, Mar:6.8,  Abr:9.2,  Mai:0}},
+  {c:'LEVE SAUDE',       h:99.0, ch:5, m:{Jan:5.0,  Fev:22.0, Mar:7.8,  Abr:49.0, Mai:15.2}},
+  {c:'ICATU',            h:42.2, ch:6, m:{Jan:24.7, Fev:0,    Mar:5.0,  Abr:12.5, Mai:0}},
+  {c:'GETATENDE',        h:37.1, ch:4, m:{Jan:4.0,  Fev:27.1, Mar:6.0,  Abr:0,    Mai:0}},
+  {c:'HOME AGENT',       h:36.0, ch:1, m:{Jan:0,    Fev:0,    Mar:0,    Abr:36.0, Mai:0}},
+  {c:'CAREPLUS',         h:34.0, ch:6, m:{Jan:15.5, Fev:6.0,  Mar:4.5,  Abr:7.0,  Mai:1.0}},
+  {c:'GHC',              h:30.5, ch:5, m:{Jan:4.8,  Fev:8.8,  Mar:0,    Abr:12.5, Mai:4.5}},
+  {c:'180 SEGUROS',      h:21.5, ch:3, m:{Jan:18.5, Fev:0,    Mar:0,    Abr:3.0,  Mai:0}},
+  {c:'MAG SEGUROS',      h:18.8, ch:2, m:{Jan:0.8,  Fev:4.2,  Mar:10.8, Abr:3.0,  Mai:0}},
+  {c:'H&B BLOCK',        h:14.0, ch:2, m:{Jan:1.0,  Fev:5.0,  Mar:8.0,  Abr:0,    Mai:0}},
+  {c:'TEMPO ASSIST',     h:12.0, ch:2, m:{Jan:8.0,  Fev:3.5,  Mar:0.5,  Abr:0,    Mai:0}},
+  {c:'Outros (9)',       h:26.8, ch:11,m:{Jan:9.7,  Fev:6.2,  Mar:13.5, Abr:5.0,  Mai:2.0}},
+];
+
+const DEM = [
+  {c:'MICHELIN C.FLEET',h:2118.9,m:{Jan:585.7,Fev:433.9,Mar:519.9,Abr:459.4,Mai:120.1}},
+  {c:'Demandas (interno)',h:789.4,m:{Jan:279.8,Fev:136.0,Mar:239.0,Abr:98.6, Mai:36.0}},
+  {c:'BANCO DO BRASIL', h:157.2, m:{Jan:0,    Fev:51.2, Mar:49.7, Abr:8.5,  Mai:47.8}},
+  {c:'MPMG',            h:132.9, m:{Jan:50.4, Fev:14.8, Mar:37.2, Abr:20.2, Mai:10.2}},
+  {c:'OMNIZE',          h:68.8,  m:{Jan:0,    Fev:6.0,  Mar:13.2, Abr:46.5, Mai:3.0}},
+  {c:'RENNER',          h:42.0,  m:{Jan:5.2,  Fev:0,    Mar:22.2, Abr:2.8,  Mai:11.8}},
+  {c:'180 SEGUROS',     h:10.2,  m:{Jan:0,    Fev:0,    Mar:10.2, Abr:0,    Mai:0}},
+  {c:'SITEL',           h:6.0,   m:{Jan:0,    Fev:0,    Mar:5.0,  Abr:0,    Mai:1.0}},
+  {c:'MAG SEGUROS',     h:5.0,   m:{Jan:1.0,  Fev:0,    Mar:4.0,  Abr:0,    Mai:0}},
+  {c:'GETATENDE',       h:3.0,   m:{Jan:0,    Fev:0,    Mar:0,    Abr:0,    Mai:3.0}},
+  {c:'ATENTO',          h:2.0,   m:{Jan:0,    Fev:0,    Mar:1.0,  Abr:1.0,  Mai:0}},
+  {c:'AEC',             h:1.3,   m:{Jan:0,    Fev:0,    Mar:1.3,  Abr:0,    Mai:0}},
+];
+
+// ── PALETTE ──────────────────────────────────────────────────────
+const PAL = ['#2563eb','#7c3aed','#0891b2','#16a34a','#ea580c','#d97706','#db2777',
+             '#0f766e','#65a30d','#9333ea','#64748b','#f43f5e','#a78bfa','#34d399',
+             '#fb923c','#38bdf8','#a3e635','#f472b6','#4ade80','#fbbf24'];
+
+// ── PIE LABEL PLUGIN ─────────────────────────────────────────────
+const pieLabelPlugin = {
+  id:'pieLabels',
+  afterDatasetsDraw(chart) {
+    if (chart.config.type !== 'doughnut' && chart.config.type !== 'pie') return;
+    const {ctx,data} = chart;
+    const ds   = data.datasets[0];
+    const meta = chart.getDatasetMeta(0);
+    const sum  = ds.data.reduce((a,b)=>a+b,0);
+    meta.data.forEach((arc,i) => {
+      const raw = ds.data[i];
+      if (!raw||raw<=0) return;
+      const pct = raw/sum*100;
+      if (pct < 3) return;
+      const mid = (arc.startAngle+arc.endAngle)/2;
+      const r   = arc.innerRadius+(arc.outerRadius-arc.innerRadius)*0.62;
+      const x   = arc.x+r*Math.cos(mid), y=arc.y+r*Math.sin(mid);
+      ctx.save();
+      ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#fff';
+      const lbl = data.labels[i];
+      const short = lbl.length>14 ? lbl.substring(0,12)+'…' : lbl;
+      if (pct>=7) {
+        ctx.font='bold 10px -apple-system,sans-serif'; ctx.fillText(short,x,y-7);
+        ctx.font='10px -apple-system,sans-serif';      ctx.fillText(pct.toFixed(1)+'%',x,y+7);
+      } else {
+        ctx.font='bold 9px -apple-system,sans-serif'; ctx.fillText(pct.toFixed(1)+'%',x,y);
+      }
+      ctx.restore();
+    });
+  }
+};
+
+// ── BAR INSIDE LABEL PLUGIN ──────────────────────────────────────
+const barLabelPlugin = {
+  id:'barLabels',
+  afterDatasetsDraw(chart) {
+    if (chart.config.type!=='bar') return;
+    const {ctx} = chart;
+    const isH = chart.options.indexAxis==='y';
+    chart.data.datasets.forEach((ds,di) => {
+      const meta = chart.getDatasetMeta(di);
+      if (meta.hidden) return;
+      meta.data.forEach((bar,i) => {
+        const raw = ds.data[i]; if (!raw||raw<=0) return;
+        if (isH) {
+          const bw = Math.abs(bar.base-bar.x); if (bw<28) return;
+          const pct = chart.options._total ? (raw/chart.options._total*100).toFixed(1)+'%' : '';
+          ctx.save(); ctx.font='bold 10px -apple-system,sans-serif';
+          ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          if (bw>70) {
+            ctx.fillText(raw.toLocaleString('pt-BR',{maximumFractionDigits:0})+'h', bar.base+bw*.5, bar.y-6);
+            ctx.font='9px -apple-system,sans-serif';
+            ctx.fillText(pct, bar.base+bw*.5, bar.y+6);
+          } else { ctx.fillText(pct||raw+'h', bar.base+bw*.5, bar.y); }
+          ctx.restore();
+        } else {
+          const bh = Math.abs(bar.base-bar.y); if (bh<22) return;
+          const pct = chart.options._total ? (raw/chart.options._total*100).toFixed(1)+'%' : raw+'h';
+          ctx.save(); ctx.font='bold 11px -apple-system,sans-serif';
+          ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(pct, bar.x, bar.y+bh*.5);
+          ctx.restore();
+        }
+      });
+    });
+  }
+};
+Chart.register(pieLabels=pieLabelPlugin, barLabels=barLabelPlugin);
+
+// ── HELPERS ──────────────────────────────────────────────────────
+const fmt  = (v,d=0) => v.toLocaleString('pt-BR',{maximumFractionDigits:d});
+const pct  = (v,t)   => (v/t*100).toFixed(1)+'%';
+let charts = {};
+function destroyChart(id) { if(charts[id]){charts[id].destroy();delete charts[id];} }
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name==='adm')     buildAdm();
+  if (name==='pmo')     buildPmo();
+  if (name==='suporte') buildSuport();
+  if (name==='demanda') buildDemanda();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ABA EQUIPA
+// ══════════════════════════════════════════════════════════════════
+let activeTeam = 0;
+
+function buildEquipa() {
+  // selector buttons
+  const sel = document.getElementById('teamSelector');
+  sel.innerHTML = EQUIPA.map((eq,i) =>
+    `<button class="team-btn ${i===0?'active':''}" style="--c:${eq.color}"
+      onclick="selectTeam(${i},this)">${eq.name}</button>`
+  ).join('');
+
+  // summary table
+  const tbody = document.getElementById('equipaTableBody');
+  tbody.innerHTML = EQUIPA.map((eq,i) => {
+    const wp = (eq.work/eq.total*100).toFixed(1)+'%';
+    const bp = (eq.bugs/eq.total*100).toFixed(1)+'%';
+    const bw = Math.round(eq.bugs/EQUIPA[0].total*100);
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${eq.color};margin-right:6px"></span><strong>${eq.name}</strong></td>
+      <td>${eq.membros}</td>
+      <td><strong>${fmt(eq.total)}h</strong></td>
+      <td>${fmt(eq.work)}h</td>
+      <td style="color:#16a34a;font-weight:700">${wp}</td>
+      <td>${fmt(eq.bugs)}h</td>
+      <td style="color:${eq.bugs/eq.total>0.1?'#ea580c':'#d97706'};font-weight:700">${bp}</td>
+      <td><div class="bar-track"><div class="bar-fill" style="width:${Math.round(eq.total/EQUIPA[0].total*100)}%;background:${eq.color}"></div></div></td>
+    </tr>`;
+  }).join('');
+
+  selectTeam(0);
+}
+
+function selectTeam(idx, btn) {
+  activeTeam = idx;
+  document.querySelectorAll('.team-btn').forEach((b,i)=>{
+    b.classList.toggle('active',i===idx);
+  });
+  const eq = EQUIPA[idx];
+  // KPIs
+  document.getElementById('kpi-work').textContent     = fmt(eq.work)+'h';
+  document.getElementById('kpi-work-pct').textContent = pct(eq.work,eq.total)+' do total';
+  document.getElementById('kpi-bugs').textContent     = fmt(eq.bugs)+'h';
+  document.getElementById('kpi-bugs-pct').textContent = pct(eq.bugs,eq.total)+' de bugs';
+  document.getElementById('kpi-membros').textContent  = eq.membros;
+
+  const labels = ['Jan','Fev','Mar','Abr','Mai'];
+  const wVals  = labels.map(m=>eq.work_m[m]||0);
+  const bVals  = labels.map(m=>eq.bugs_m[m]||0);
+
+  // Stacked bar
+  destroyChart('teamMonth');
+  charts.teamMonth = new Chart(document.getElementById('teamMonthChart'),{
+    type:'bar',
+    data:{labels:MESES, datasets:[
+      {label:'Trabalho',data:wVals,backgroundColor:eq.color,borderRadius:4,borderSkipped:false},
+      {label:'Bugs',    data:bVals,backgroundColor:'#fca5a5',borderRadius:4,borderSkipped:false},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12}},
+               tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.parsed.y)}h`}}},
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{font:{size:10}}},
+        y:{stacked:true,grid:{color:'#f1f5f9'},ticks:{font:{size:10},callback:v=>fmt(v)+'h'}}
+      }
+    }
+  });
+
+  // Bug % line
+  destroyChart('teamBugPct');
+  const bugPct = labels.map((m,i)=>{
+    const t = (eq.work_m[m]||0)+(eq.bugs_m[m]||0);
+    return t>0 ? +((eq.bugs_m[m]||0)/t*100).toFixed(1) : 0;
+  });
+  charts.teamBugPct = new Chart(document.getElementById('teamBugPctChart'),{
+    type:'line',
+    data:{labels:MESES, datasets:[{
+      label:'% Bugs',data:bugPct,
+      borderColor:'#ea580c',backgroundColor:'rgba(234,88,12,.08)',
+      pointBackgroundColor:'#ea580c',pointRadius:5,fill:true,tension:.35,borderWidth:2.5
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+               tooltip:{callbacks:{label:c=>` ${c.parsed.y.toFixed(1)}% bugs`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10}}},
+        y:{grid:{color:'#f1f5f9'},min:0,
+           ticks:{font:{size:10},callback:v=>v+'%'}}
+      }
+    },
+    plugins:[{
+      id:'bugPctLabels',
+      afterDatasetsDraw(chart){
+        const {ctx}=chart; const meta=chart.getDatasetMeta(0); const ds=chart.data.datasets[0];
+        meta.data.forEach((pt,i)=>{
+          const v=ds.data[i]; if(v===0)return;
+          ctx.save(); ctx.font='bold 10px -apple-system,sans-serif';
+          ctx.fillStyle='#ea580c'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(v.toFixed(1)+'%',pt.x,pt.y-5); ctx.restore();
+        });
+      }
+    }]
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ABA ADMINISTRATIVO
+// ══════════════════════════════════════════════════════════════════
+function buildAdm() {
+  if (charts.admPie) return; // already built
+
+  // Pie
+  const top8 = ADM.by_tarefa.slice(0,8);
+  const outros = ADM.by_tarefa.slice(8).reduce((s,x)=>s+x[1],0);
+  const pieData = [...top8.map(x=>x[1]), outros];
+  const pieLabels = [...top8.map(x=>x[0]), 'Outros'];
+
+  charts.admPie = new Chart(document.getElementById('admPieChart'),{
+    type:'doughnut',
+    data:{labels:pieLabels, datasets:[{data:pieData,backgroundColor:PAL,borderWidth:2,borderColor:'#fff',hoverOffset:8}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'48%',
+      plugins:{legend:{position:'right',labels:{font:{size:10},padding:6,boxWidth:10}},
+               tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.parsed)}h (${pct(c.parsed,ADM.total)})`}}}
+    }
+  });
+
+  // Monthly bar
+  const admMesArr = ['Jan','Fev','Mar','Abr','Mai'].map(m=>ADM.by_mes[m]||0);
+  charts.admMonth = new Chart(document.getElementById('admMonthChart'),{
+    type:'bar',
+    data:{labels:MESES, datasets:[{label:'Horas ADM',data:admMesArr,
+      backgroundColor:['#7c3aed','#7c3aed','#7c3aed','#7c3aed','#a78bfa'],borderRadius:8,borderSkipped:false}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,_total:ADM.total,
+      plugins:{legend:{display:false},
+               tooltip:{callbacks:{label:c=>` ${fmt(c.parsed.y)}h (${pct(c.parsed.y,ADM.total)} do ADM)`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},
+              y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10},callback:v=>fmt(v)+'h'}}}
+    }
+  });
+
+  // Monthly table
+  const admTbl = document.getElementById('admMonthTbl');
+  admTbl.innerHTML = ['Jan','Fev','Mar','Abr','Mai'].map((m,i)=>{
+    const h=ADM.by_mes[m]||0;
+    return `<tr><td style="font-weight:600">${MESES[i]}</td><td>${fmt(h)}h</td><td style="font-weight:700;color:#7c3aed">${pct(h,ADM.total)}</td></tr>`;
+  }).join('');
+
+  // Ranking table
+  const tbody = document.getElementById('admTableBody');
+  const maxH  = ADM.by_tarefa[0][1];
+  tbody.innerHTML = ADM.by_tarefa.map(([nome,h],i)=>{
+    const w = Math.round(h/maxH*100);
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td>${nome}</td>
+      <td><strong>${fmt(h)}h</strong></td>
+      <td style="font-weight:700;color:#7c3aed">${pct(h,ADM.total)}</td>
+      <td><div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${PAL[i%PAL.length]}"></div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ABA PMO
+// ══════════════════════════════════════════════════════════════════
+function buildPmo() {
+  if (charts.pmoBar) return;
+  const PMOT = PMO.reduce((s,x)=>s+x.h,0);
+
+  // Bar: horas por cliente (top 10)
+  const top10 = PMO.slice(0,10);
+  charts.pmoBar = new Chart(document.getElementById('pmoBarChart'),{
+    type:'bar', indexAxis:'y',
+    data:{labels:top10.map(x=>x.c), datasets:[{
+      label:'Horas',data:top10.map(x=>x.h),
+      backgroundColor:PAL.slice(0,10),borderRadius:6,borderSkipped:false
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,_total:PMOT,
+      plugins:{legend:{display:false},
+               tooltip:{callbacks:{label:c=>` ${fmt(c.parsed.x)}h · ${pct(c.parsed.x,PMOT)} do PMO`}}},
+      scales:{x:{grid:{color:'#f1f5f9'},ticks:{font:{size:10},callback:v=>fmt(v)+'h'}},
+              y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+
+  // Bar: projetos por cliente (top 12)
+  const top12p = PMO.slice(0,12).filter(x=>x.p>0);
+  charts.pmoProj = new Chart(document.getElementById('pmoProjChart'),{
+    type:'bar', indexAxis:'y',
+    data:{labels:top12p.map(x=>x.c), datasets:[{
+      label:'Projetos',data:top12p.map(x=>x.p),
+      backgroundColor:PAL.slice(0,12),borderRadius:6,borderSkipped:false
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+               tooltip:{callbacks:{label:c=>` ${c.parsed.x} projeto(s) PMO`}}},
+      scales:{x:{grid:{color:'#f1f5f9'},ticks:{font:{size:10},stepSize:1}},
+              y:{grid:{display:false},ticks:{font:{size:10}}}}
+    },
+    plugins:[{
+      id:'projCountLabels',
+      afterDatasetsDraw(chart){
+        const {ctx}=chart; const meta=chart.getDatasetMeta(0); const ds=chart.data.datasets[0];
+        meta.data.forEach((bar,i)=>{
+          const v=ds.data[i]; const bw=Math.abs(bar.base-bar.x);
+          ctx.save(); ctx.font='bold 11px -apple-system,sans-serif';
+          if(bw>30){ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(v,bar.base+bw*.5,bar.y);}
+          else{ctx.fillStyle='#555';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(v,bar.x+4,bar.y);}
+          ctx.restore();
+        });
+      }
+    }]
+  });
+
+  // Table
+  const tbody = document.getElementById('pmoTableBody');
+  tbody.innerHTML = PMO.map((d,i)=>{
+    const chips = d.chaves.slice(0,4).map(ch=>`<span class="chip">${ch}</span>`).join('');
+    const more  = d.chaves.length>4 ? `<span class="chip">+${d.chaves.length-4}</span>` : '';
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td><strong>${d.c}</strong></td>
+      <td>${fmt(d.h)}h</td>
+      <td style="font-weight:700;color:${PAL[i%PAL.length]}">${pct(d.h,PMOT)}</td>
+      <td style="font-weight:700;text-align:center">${d.p}</td>
+      <td><div class="chip-list">${chips}${more}</div></td>
+      ${['Jan','Fev','Mar','Abr','Mai'].map(m=>`<td>${d.m[m]>0?fmt(d.m[m])+'h':'—'}</td>`).join('')}
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ABA SUPORTE
+// ══════════════════════════════════════════════════════════════════
+function buildSuport() {
+  if (charts.supPie) return;
+  const SUPT = SUP.reduce((s,x)=>s+x.h,0);
+
+  // Pie
+  charts.supPie = new Chart(document.getElementById('supPieChart'),{
+    type:'doughnut',
+    data:{labels:SUP.map(x=>x.c), datasets:[{data:SUP.map(x=>x.h),backgroundColor:PAL,borderWidth:2,borderColor:'#fff',hoverOffset:8}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'48%',
+      plugins:{legend:{position:'right',labels:{font:{size:10},padding:6,boxWidth:10}},
+               tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.parsed)}h (${pct(c.parsed,SUPT)})`}}}
+    }
+  });
+
+  // Monthly stacked line
+  const supMesArr = ['Jan','Fev','Mar','Abr','Mai'].map(m=>
+    SUP.reduce((s,x)=>s+(x.m[m]||0),0)
+  );
+  charts.supMonth = new Chart(document.getElementById('supMonthChart'),{
+    type:'bar',
+    data:{labels:MESES, datasets:[{label:'Horas Suporte',data:supMesArr,
+      backgroundColor:['#0891b2','#0891b2','#0891b2','#0891b2','#67e8f9'],borderRadius:8,borderSkipped:false}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,_total:SUPT,
+      plugins:{legend:{display:false},
+               tooltip:{callbacks:{label:c=>` ${fmt(c.parsed.y)}h`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},
+              y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10},callback:v=>fmt(v)+'h'}}}
+    }
+  });
+
+  // Table
+  const tbody = document.getElementById('supTableBody');
+  const maxH = SUP[0].h;
+  tbody.innerHTML = SUP.map((d,i)=>{
+    const w = Math.round(d.h/maxH*100);
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td><strong>${d.c}</strong></td>
+      <td>${fmt(d.h)}h</td>
+      <td style="font-weight:700;color:${PAL[i%PAL.length]}">${pct(d.h,SUPT)}</td>
+      <td style="text-align:center">${d.ch}</td>
+      ${['Jan','Fev','Mar','Abr','Mai'].map(m=>`<td>${d.m[m]>0?fmt(d.m[m])+'h':'—'}</td>`).join('')}
+      <td><div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${PAL[i%PAL.length]}"></div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ABA DEMANDA
+// ══════════════════════════════════════════════════════════════════
+function buildDemanda() {
+  if (charts.demPie) return;
+  const DEMT = DEM.reduce((s,x)=>s+x.h,0);
+
+  charts.demPie = new Chart(document.getElementById('demPieChart'),{
+    type:'doughnut',
+    data:{labels:DEM.map(x=>x.c), datasets:[{data:DEM.map(x=>x.h),backgroundColor:PAL,borderWidth:2,borderColor:'#fff',hoverOffset:8}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'48%',
+      plugins:{legend:{position:'right',labels:{font:{size:10},padding:6,boxWidth:10}},
+               tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.parsed)}h (${pct(c.parsed,DEMT)})`}}}
+    }
+  });
+
+  const demMesArr = ['Jan','Fev','Mar','Abr','Mai'].map(m=>
+    DEM.reduce((s,x)=>s+(x.m[m]||0),0)
+  );
+  charts.demMonth = new Chart(document.getElementById('demMonthChart'),{
+    type:'bar',
+    data:{labels:MESES, datasets:[{label:'Horas Demanda',data:demMesArr,
+      backgroundColor:['#d97706','#d97706','#d97706','#d97706','#fcd34d'],borderRadius:8,borderSkipped:false}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,_total:DEMT,
+      plugins:{legend:{display:false},
+               tooltip:{callbacks:{label:c=>` ${fmt(c.parsed.y)}h`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},
+              y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10},callback:v=>fmt(v)+'h'}}}
+    }
+  });
+
+  const tbody = document.getElementById('demTableBody');
+  const maxH = DEM[0].h;
+  tbody.innerHTML = DEM.map((d,i)=>{
+    const w = Math.round(d.h/maxH*100);
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td><strong>${d.c}</strong></td>
+      <td>${fmt(d.h)}h</td>
+      <td style="font-weight:700;color:${PAL[i%PAL.length]}">${pct(d.h,DEMT)}</td>
+      ${['Jan','Fev','Mar','Abr','Mai'].map(m=>`<td>${d.m[m]>0?fmt(d.m[m])+'h':'—'}</td>`).join('')}
+      <td><div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${PAL[i%PAL.length]}"></div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+buildEquipa();
+</script>
+</body>
+</html>
